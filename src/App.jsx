@@ -400,15 +400,28 @@ function Dialer({config}){
     }catch(e){addLog(`✗ Deal failed: ${e.message}`,"e");}
   };
 
-  const openInHubSpot=contact=>{
-    const hsId=contact.hs_id;
+  const openInHubSpot=async contact=>{
+    let hsId=contact.hs_id&&!contact.hs_id.match(/^[a-z0-9]{8,}$/)&&!contact.hs_id.startsWith("rand")?contact.hs_id:null;
+    // If no valid HS id, look it up now
+    if(!hsId){
+      addLog(`Looking up ${contact.name} in HubSpot...`,"b");
+      hsId=await lookupHSContact(contact);
+      if(hsId){
+        // Cache it back
+        setContacts(prev=>prev.map(c=>c.id===contact.id?{...c,hs_id:hsId}:c));
+      }
+    }
     let url;
-    if(hsId&&!hsId.startsWith("rand")){
-      url=`https://app.hubspot.com/contacts/${config.portalId}/contact/${hsId}`;
+    const phone=contact.phone?encodeURIComponent(contact.phone.replace(/\s/g,"")):"";
+    if(hsId){
+      // Opens contact page with phone pre-filled in HubSpot dialer
+      url=`https://app.hubspot.com/contacts/${config.portalId}/contact/${hsId}${phone?`?hs_call_phone_number=${phone}`:""}`;
     } else if(contact.phone){
       url=`https://app.hubspot.com/contacts/${config.portalId}/contacts/list/view/all/?query=${encodeURIComponent(contact.phone)}`;
+      addLog(`! No HubSpot ID found — searching by phone`,"w");
     } else {
       url=`https://app.hubspot.com/contacts/${config.portalId}/contacts/list/view/all/?query=${encodeURIComponent(contact.name)}`;
+      addLog(`! No HubSpot ID found — searching by name`,"w");
     }
     if(hsTabRef.current&&!hsTabRef.current.closed){
       hsTabRef.current.location.href=url;
@@ -416,11 +429,12 @@ function Dialer({config}){
       hsTabRef.current=window.open(url,"hubspot_dialer");
     }
     addLog(`📋 Opened ${contact.name} in HubSpot — click Call`,"b");
+    return hsId;
   };
 
-  const startCall=()=>{
+  const startCall=async()=>{
     if(!current)return;
-    openInHubSpot(current);
+    await openInHubSpot(current);
     setCallState("incall");
     addLog(`📞 Calling ${current.name} — ${current.phone||"no phone"}`);
   };
@@ -475,9 +489,7 @@ function Dialer({config}){
     setIdx(nextIdx);
     const delay=parseInt(config.autoDialDelay||"0");
     if(delay===0){
-      openInHubSpot(next);
-      setCallState("incall");
-      addLog(`📞 Calling ${next.name}`);
+      openInHubSpot(next).then(()=>{setCallState("incall");addLog(`📞 Calling ${next.name}`);});
     } else {
       setCountdown(delay);
       clearInterval(countdownRef.current);
@@ -488,7 +500,7 @@ function Dialer({config}){
             setCountdown(0);
             setContacts(prev=>{
               const nc=prev[nextIdx];
-              if(nc){openInHubSpot(nc);setCallState("incall");addLog(`📞 Calling ${nc.name}`);}
+              if(nc){openInHubSpot(nc).then(()=>{setCallState("incall");addLog(`📞 Calling ${nc.name}`);});}
               return prev;
             });
             return 0;
