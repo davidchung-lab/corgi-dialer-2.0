@@ -1,25 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-// ─── Styles — HubSpot-inspired light UI ──────────────────────────────────────
 const S = `
 @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap');
-
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#f5f8fa;--surface:#ffffff;--card:#ffffff;--border:#dde3ea;--border2:#c5cdd6;
+  --bg:#f5f8fa;--surface:#fff;--card:#fff;--border:#dde3ea;--border2:#c5cdd6;
   --accent:#ff5c35;--accent-h:#e04a25;--green:#00a870;--red:#e5374a;--yellow:#d4840a;--blue:#0091ae;
   --text:#1a2738;--text2:#516f90;--text3:#99acc2;--active-bg:#fff8f6;
   --font:'Lexend',sans-serif;
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;}
-
-.shell{display:grid;grid-template-columns:260px 1fr 300px;grid-template-rows:56px 1fr;height:100vh;overflow:hidden;}
+.shell{display:grid;grid-template-columns:260px 1fr;grid-template-rows:56px 1fr;height:100vh;overflow:hidden;}
 .topbar{grid-column:1/-1;display:flex;align-items:center;background:var(--surface);border-bottom:2px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,.06);}
 .sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
 .main{display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
-.intel{background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
-
-/* Topbar */
 .tb-brand{display:flex;align-items:center;gap:10px;padding:0 20px;border-right:1px solid var(--border);height:100%;min-width:260px;}
 .tb-logo{width:30px;height:30px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;}
 .tb-name{font-size:16px;font-weight:700;color:var(--text);}
@@ -30,25 +24,20 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .tb-stats{display:flex;height:100%;}
 .tb-stat{padding:0 16px;display:flex;flex-direction:column;justify-content:center;border-left:1px solid var(--border);min-width:72px;}
 .tb-val{font-size:20px;font-weight:700;line-height:1;}
-.tb-val.g{color:var(--green);}
-.tb-val.r{color:var(--red);}
-.tb-val.y{color:var(--yellow);}
-.tb-val.b{color:var(--blue);}
+.tb-val.g{color:var(--green);}.tb-val.r{color:var(--red);}.tb-val.y{color:var(--yellow);}.tb-val.b{color:var(--blue);}
 .tb-lbl{font-size:10px;color:var(--text3);margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
 .tb-status{padding:0 20px;border-left:1px solid var(--border);height:100%;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);font-weight:600;white-space:nowrap;}
 .sdot{width:9px;height:9px;border-radius:50%;background:var(--text3);flex-shrink:0;}
 .sdot.live{background:var(--green);box-shadow:0 0 0 3px rgba(0,168,112,.15);animation:sp 1.5s infinite;}
 .sdot.paused{background:var(--yellow);}
-.sdot.ringing{background:var(--accent);animation:sp 1s infinite;}
+.sdot.calling{background:var(--accent);animation:sp 1s infinite;}
 @keyframes sp{0%,100%{opacity:1;}50%{opacity:.3;}}
-
-/* Sidebar */
 .sb-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .sb-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;}
 .sb-count{background:var(--accent);color:#fff;font-size:11px;font-weight:700;border-radius:12px;padding:2px 9px;}
 .sb-search{padding:8px 12px;border-bottom:1px solid var(--border);}
 .sb-search input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--font);font-size:13px;padding:7px 11px;outline:none;transition:border-color .15s;font-weight:500;}
-.sb-search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,92,53,.1);}
+.sb-search input:focus{border-color:var(--accent);}
 .sb-search input::placeholder{color:var(--text3);}
 .queue{flex:1;overflow-y:auto;}
 .queue::-webkit-scrollbar{width:4px;}
@@ -65,8 +54,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .tag-na{background:#fde8ea;color:var(--red);}
 .tag-book{background:#fff3e0;color:var(--yellow);}
 .tag-skip{background:var(--bg);color:var(--text3);}
-
-/* Main */
 .contact-area{flex:1;overflow-y:auto;padding:18px;}
 .contact-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.05);animation:fu .18s ease;}
 @keyframes fu{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
@@ -76,26 +63,22 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .cc-title{font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:500;}
 .cc-meta{display:flex;flex-wrap:wrap;gap:6px;}
 .mpill{font-size:12px;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 11px;display:flex;align-items:center;gap:5px;font-weight:500;}
-.mpill a{color:var(--blue);text-decoration:none;font-weight:500;}
+.mpill a{color:var(--blue);text-decoration:none;}
 .mpill a:hover{text-decoration:underline;}
 .timer-block{text-align:right;}
 .timer-val{font-size:30px;font-weight:700;color:var(--red);line-height:1;font-variant-numeric:tabular-nums;}
 .timer-val.idle{color:var(--text3);}
-.timer-sub{font-size:10px;color:var(--text3);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
-
-/* Action bar */
+.timer-sub{font-size:10px;color:var(--text3);margin-top:3px;font-weight:600;text-transform:uppercase;}
+.hs-btn-wrap{margin-top:14px;}
+.hs-open-btn{display:flex;align-items:center;gap:8px;background:#ff5c35;color:#fff;border:none;border-radius:8px;padding:11px 20px;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;transition:background .15s;text-decoration:none;}
+.hs-open-btn:hover{background:#e04a25;}
+.hs-open-btn.calling{background:var(--green);}
+.hs-open-btn.calling:hover{background:#009060;}
 .action-bar{background:var(--surface);border-top:1px solid var(--border);padding:12px 18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 -2px 6px rgba(0,0,0,.04);}
 .action-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-
 .btn{font-family:var(--font);font-size:13px;font-weight:600;border-radius:7px;padding:8px 16px;cursor:pointer;transition:all .15s;white-space:nowrap;outline:none;border:1px solid var(--border);background:var(--surface);color:var(--text2);}
 .btn:hover:not(:disabled){background:var(--bg);border-color:var(--border2);color:var(--text);}
 .btn:disabled{opacity:.3;cursor:not-allowed;}
-.btn.dial{background:var(--green);color:#fff;border-color:var(--green);font-size:14px;padding:9px 22px;}
-.btn.dial:hover:not(:disabled){background:#009060;border-color:#009060;}
-.btn.dial.ringing{background:var(--yellow);border-color:var(--yellow);color:#fff;animation:bp 1s infinite;}
-.btn.dial.incall{background:var(--red);border-color:var(--red);color:#fff;}
-.btn.dial.incall:hover:not(:disabled){background:#c42d3e;}
-@keyframes bp{0%,100%{opacity:1;}50%{opacity:.7;}}
 .btn.success{background:var(--green);color:#fff;border-color:var(--green);}
 .btn.success:hover:not(:disabled){background:#009060;}
 .btn.danger{background:var(--red);color:#fff;border-color:var(--red);}
@@ -103,8 +86,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .btn.orange{background:var(--accent);color:#fff;border-color:var(--accent);}
 .btn.orange:hover:not(:disabled){background:var(--accent-h);}
 .btn.pause-btn{background:#fff3cd;color:var(--yellow);border-color:#f0c040;font-weight:600;}
-
-/* Demo panel */
 .demo-panel{background:#fffbf5;border:1px solid #f0c040;border-radius:10px;padding:18px;margin-bottom:14px;animation:fu .18s ease;}
 .demo-title{font-size:14px;font-weight:700;color:var(--yellow);margin-bottom:14px;}
 .demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -112,10 +93,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .field.full{grid-column:1/-1;}
 .field label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;}
 .field input,.field select,.field textarea{background:#fff;border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 11px;outline:none;transition:border-color .15s;width:100%;font-weight:500;}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,92,53,.1);}
+.field input:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,92,53,.1);}
 .field textarea{resize:none;min-height:64px;}
-
-/* Log */
 .log-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;flex:1;min-height:0;display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.04);}
 .log-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;}
 .log-scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px;}
@@ -124,30 +103,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .log-row{display:flex;gap:8px;font-size:12px;line-height:1.4;}
 .log-t{color:var(--text3);flex-shrink:0;font-weight:500;}
 .log-msg{color:var(--text2);font-weight:500;}
-.log-msg.s{color:var(--green);}
-.log-msg.e{color:var(--red);}
-.log-msg.w{color:var(--yellow);}
-.log-msg.b{color:var(--blue);}
-
-/* Intel */
-.intel-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-.intel-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;}
-.intel-body{flex:1;overflow-y:auto;padding:16px;}
-.intel-body::-webkit-scrollbar{width:3px;}
-.intel-body::-webkit-scrollbar-thumb{background:var(--border);}
-.spin{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spinr .7s linear infinite;}
-@keyframes spinr{to{transform:rotate(360deg);}}
-.intel-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100px;gap:10px;color:var(--text2);font-size:13px;font-weight:500;}
-.intel-sec{margin-bottom:18px;}
-.intel-sec-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
-.intel-bullets{display:flex;flex-direction:column;gap:8px;}
-.intel-bullet{font-size:13px;color:var(--text);line-height:1.5;padding-left:14px;position:relative;font-weight:400;}
-.intel-bullet::before{content:'›';position:absolute;left:0;color:var(--accent);font-weight:700;font-size:15px;line-height:1.3;}
-.intel-track{font-size:13px;color:var(--text);line-height:1.6;background:var(--active-bg);border-left:3px solid var(--accent);padding:10px 13px;border-radius:0 7px 7px 0;font-style:italic;font-weight:500;}
-.intel-empty{font-size:13px;color:var(--text3);text-align:center;padding:40px 16px;font-weight:500;}
-.intel-err{font-size:13px;color:var(--red);text-align:center;padding:30px 16px;line-height:1.7;font-weight:500;}
-
-/* Toggle */
+.log-msg.s{color:var(--green);}.log-msg.e{color:var(--red);}.log-msg.w{color:var(--yellow);}.log-msg.b{color:var(--blue);}
 .toggle-row{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;}
 .toggle{width:34px;height:19px;border-radius:10px;background:var(--border2);position:relative;transition:background .2s;flex-shrink:0;}
 .toggle.on{background:var(--green);}
@@ -155,8 +111,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .toggle.on::after{transform:translateX(15px);}
 .tlabel{font-size:13px;font-weight:600;color:var(--text2);}
 .tlabel.on{color:var(--text);}
-
-/* Setup */
 .setup{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:40px 40px 80px;background:var(--bg);overflow-y:auto;}
 .setup-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:36px;width:100%;max-width:540px;margin:auto;box-shadow:0 2px 12px rgba(0,0,0,.07);}
 .setup-logo{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
@@ -176,11 +130,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .setup-btn{width:100%;padding:13px;font-size:14px;font-family:var(--font);font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;margin-top:8px;transition:background .15s;}
 .setup-btn:hover:not(:disabled){background:var(--accent-h);}
 .setup-btn:disabled{opacity:.35;cursor:not-allowed;}
-
 .paused-hint{background:#fff8f0;border:1px solid #f0c040;border-radius:8px;padding:10px 14px;font-size:13px;color:var(--yellow);font-weight:600;margin-bottom:14px;}
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text3);}
-.empty-icon{font-size:42px;}
-.empty p{font-size:14px;font-weight:600;}
+.empty-icon{font-size:42px;}.empty p{font-size:14px;font-weight:600;}
 .divider{width:1px;background:var(--border);height:30px;margin:0 2px;flex-shrink:0;}
 .countdown-bar{background:var(--active-bg);border:1px solid var(--accent);border-radius:8px;padding:10px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;}
 .cd-text{font-size:13px;font-weight:600;color:var(--accent);flex:1;}
@@ -188,15 +140,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .cd-track{flex:2;height:4px;background:var(--border);border-radius:4px;overflow:hidden;}
 .cd-fill{height:100%;background:var(--accent);border-radius:4px;transition:width 1s linear;}
 .btn.cancel-cd{font-size:12px;padding:5px 12px;border-color:var(--border2);color:var(--text2);}
-.btn.cancel-cd:hover{background:var(--bg);}
 `;
 
-
-const initials = n=>(n||"").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?";
-const fmtTime = s=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
-const ts = ()=>new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"});
-const eom = ()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth()+1,0).toISOString().split("T")[0];};
-const mergeTpl = (t,c)=>t.replace(/{{first_name}}/g,c.name?.split(" ")[0]||"there").replace(/{{company}}/g,c.company||"your company");
+const initials=n=>(n||"").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?";
+const fmtTime=s=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+const ts=()=>new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+const eom=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth()+1,0).toISOString().split("T")[0];};
+const mergeTpl=(t,c)=>t.replace(/{{first_name}}/g,c.name?.split(" ")[0]||"there").replace(/{{company}}/g,c.company||"your company");
 
 function useHS(key){
   return useCallback(async(path,opts={})=>{
@@ -222,41 +172,17 @@ function parseCSV(text){
       email:obj.email||obj.work_email||"",
       title:obj.title||obj.job_title||"",
       linkedin:obj.linkedin_url||obj.linkedin||obj.person_linkedin_url||"",
+      hs_id:obj.hs_id||obj.hubspot_id||obj.contact_id||"",
     };
   }).filter(c=>c.name&&c.name!=="Unknown"||c.company);
-}
-
-async function fetchIntel(contact,apiKey){
-  if(!apiKey)return "no_key";
-  const prompt=`You are a sales intelligence assistant for Corgi Insurance (AI-native insurance for startups). Research this prospect and return a 30-second brief for a BDR before a cold call.
-
-Prospect:
-- Name: ${contact.name}
-- Title: ${contact.title||"unknown"}
-- Company: ${contact.company||"unknown"}
-- LinkedIn: ${contact.linkedin||"not provided"}
-
-Return JSON only, no markdown, no backticks:
-{"opener_hooks":["2-3 specific personalized openers referencing their role or company"],"company_signals":["2-3 recent signals: funding, hiring, product launch, news"],"pain_points":["2 likely insurance pain points for a startup like this"],"talk_track":"One tailored sentence positioning Corgi for this company"}`;
-  try{
-    const r=await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01"},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,tools:[{type:"web_search_20250305",name:"web_search"}],messages:[{role:"user",content:prompt}]})
-    });
-    const d=await r.json();
-    if(!r.ok)return "error";
-    const text=d.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"{}";
-    try{return JSON.parse(text.replace(/```json|```/g,"").trim());}catch{return "error";}
-  }catch{return "error";}
 }
 
 function Setup({onSubmit}){
   const [tab,setTab]=useState("csv");
   const [form,setForm]=useState({
-    hsToken:"",anthropicKey:"",listId:"",calendlyToken:"",repName:"",alejandroEmail:"",
+    hsToken:"",portalId:"",listId:"",repName:"",
     autoDialDelay:"3",
-    noAnswerEmail:`Hi {{first_name}},\n\nI just tried reaching you — wanted to connect about how Corgi Insurance helps startups like {{company}} get their coverage sorted fast.\n\nWould love 15 minutes this week: [CALENDAR LINK]\n\nBest,\n[YOUR NAME]`,
+    noAnswerEmail:`Hi {{first_name}},\n\nI just tried reaching you — wanted to connect about how Corgi Insurance helps startups like {{company}} get coverage sorted fast.\n\nWould love 15 minutes this week: [CALENDAR LINK]\n\nBest,\n[YOUR NAME]`,
     noAnswerSms:"Hey {{first_name}}, tried calling — [YOUR NAME] from Corgi Insurance. Mind if I send a quick overview? 📋",
   });
   const [csvData,setCsvData]=useState(null);
@@ -268,23 +194,21 @@ function Setup({onSubmit}){
     r.onload=ev=>{setCsvData(parseCSV(ev.target.result));setCsvName(file.name);};
     r.readAsText(file);
   };
-  const canSubmit=form.hsToken&&(tab==="csv"?csvData?.length>0:true);
+  const canSubmit=form.hsToken&&form.portalId&&(tab==="csv"?csvData?.length>0:true);
   return(
     <div className="setup"><style>{S}</style>
     <div className="setup-card">
       <div className="setup-logo"><div className="setup-icon">C</div><div className="setup-name">Corgi Dialer</div></div>
-      <div className="setup-sub">Power dialer with HubSpot sync, AI prospect intel, and auto deal creation.</div>
+      <div className="setup-sub">Auto-dialer with HubSpot sync and deal creation.</div>
 
       <div className="setup-sec">HubSpot</div>
       <div className="sfield"><label>Private App Token *</label>
         <input type="password" placeholder="pat-na-xxxxxxxx..." value={form.hsToken} onChange={e=>set("hsToken",e.target.value)}/>
         <div className="help">HubSpot → Settings → Integrations → Private Apps → Create app</div>
       </div>
-
-      <div className="setup-sec">AI Prospect Intel</div>
-      <div className="sfield"><label>Anthropic API Key</label>
-        <input type="password" placeholder="sk-ant-api03-..." value={form.anthropicKey} onChange={e=>set("anthropicKey",e.target.value)}/>
-        <div className="help">console.anthropic.com → API Keys → Create Key — powers the intel panel on the right</div>
+      <div className="sfield"><label>Portal ID *</label>
+        <input placeholder="12345678" value={form.portalId} onChange={e=>set("portalId",e.target.value)}/>
+        <div className="help">Found in HubSpot URL: app.hubspot.com/contacts/<strong>XXXXXXXX</strong>/contacts</div>
       </div>
 
       <div className="setup-sec">Contact Queue</div>
@@ -306,33 +230,22 @@ function Setup({onSubmit}){
         </div>
       )}
 
-      <div className="setup-sec">Rep & Team</div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
-        <div className="sfield" style={{margin:0}}><label>Your Name (BDR)</label>
-          <input placeholder="David" value={form.repName} onChange={e=>set("repName",e.target.value)}/>
-        </div>
-        <div className="sfield" style={{margin:0}}><label>Alejandro's HubSpot Email</label>
-          <input placeholder="alejandro@corgi.com" value={form.alejandroEmail} onChange={e=>set("alejandroEmail",e.target.value)}/>
-        </div>
-      </div>
-
-      <div className="setup-sec">Calendly</div>
-      <div className="sfield"><label>Personal Access Token</label>
-        <input type="password" placeholder="eyJh..." value={form.calendlyToken} onChange={e=>set("calendlyToken",e.target.value)}/>
-        <div className="help">Calendly → top-right avatar → Integrations → API & Webhooks → Personal Access Token</div>
+      <div className="setup-sec">Rep</div>
+      <div className="sfield"><label>Your Name (BDR)</label>
+        <input placeholder="David" value={form.repName} onChange={e=>set("repName",e.target.value)}/>
       </div>
 
       <div className="setup-sec">Auto-Dial</div>
       <div className="sfield"><label>Delay Between Calls</label>
         <select value={form.autoDialDelay} onChange={e=>set("autoDialDelay",e.target.value)}>
-          <option value="0">No delay — instant auto-dial</option>
+          <option value="0">No delay — instant</option>
           <option value="1">1 second</option>
           <option value="2">2 seconds</option>
           <option value="3">3 seconds</option>
           <option value="4">4 seconds</option>
           <option value="5">5 seconds</option>
         </select>
-        <div className="help">After logging an outcome, how long to show the next prospect's intel before auto-dialing</div>
+        <div className="help">Time before auto-opening the next contact in HubSpot</div>
       </div>
 
       <div className="setup-sec">No-Answer Follow-up Templates</div>
@@ -351,38 +264,6 @@ function Setup({onSubmit}){
   );
 }
 
-function IntelPanel({contact,anthropicKey,intelCache,setIntelCache}){
-  const [loading,setLoading]=useState(false);
-  const intel=contact?intelCache[contact.id]:null;
-  useEffect(()=>{
-    if(!contact||intelCache[contact.id])return;
-    setLoading(true);
-    fetchIntel(contact,anthropicKey).then(d=>{setIntelCache(c=>({...c,[contact.id]:d}));setLoading(false);});
-  },[contact?.id]);
-  return(
-    <div className="intel">
-      <div className="intel-head">
-        <span className="intel-title">Prospect Intel</span>
-        {loading&&<div className="spin"/>}
-      </div>
-      <div className="intel-body">
-        {!contact&&<div className="intel-empty">Select a contact to load intel</div>}
-        {contact&&loading&&!intel&&<div className="intel-loading"><div className="spin"/><span>Researching {contact.name}...</span></div>}
-        {contact&&intel==="no_key"&&<div className="intel-err">Add your Anthropic API key on the setup screen to enable prospect intel.</div>}
-        {contact&&intel==="error"&&<div className="intel-err">Research failed.<br/>Check your Anthropic API key — it should start with <strong>sk-ant-</strong><br/><br/>Get one at console.anthropic.com</div>}
-        {contact&&intel&&intel!=="error"&&intel!=="no_key"&&(
-          <>
-            {intel.talk_track&&<div className="intel-sec"><div className="intel-sec-title">Corgi Pitch</div><div className="intel-track">{intel.talk_track}</div></div>}
-            {intel.opener_hooks?.length>0&&<div className="intel-sec"><div className="intel-sec-title">Opener Hooks</div><div className="intel-bullets">{intel.opener_hooks.map((h,i)=><div key={i} className="intel-bullet">{h}</div>)}</div></div>}
-            {intel.company_signals?.length>0&&<div className="intel-sec"><div className="intel-sec-title">Company Signals</div><div className="intel-bullets">{intel.company_signals.map((s,i)=><div key={i} className="intel-bullet">{s}</div>)}</div></div>}
-            {intel.pain_points?.length>0&&<div className="intel-sec"><div className="intel-sec-title">Pain Points</div><div className="intel-bullets">{intel.pain_points.map((p,i)=><div key={i} className="intel-bullet">{p}</div>)}</div></div>}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function Dialer({config}){
   const hs=useHS(config.hsToken);
   const [contacts,setContacts]=useState([]);
@@ -395,14 +276,14 @@ function Dialer({config}){
   const [log,setLog]=useState([]);
   const [search,setSearch]=useState("");
   const [showDemo,setShowDemo]=useState(false);
-  const [demoForm,setDemoForm]=useState({datetime:"",ae_email:"",ae_name:"",notes:""});
-  const [intelCache,setIntelCache]=useState({});
+  const [demoForm,setDemoForm]=useState({datetime:"",ae_name:"",notes:""});
   const [emailOn,setEmailOn]=useState(true);
   const [smsOn,setSmsOn]=useState(true);
   const [countdown,setCountdown]=useState(0);
   const countdownRef=useRef(null);
   const timerRef=useRef(null);
   const logRef=useRef(null);
+  const hsTabRef=useRef(null);
 
   const addLog=useCallback((text,type="")=>{
     setLog(l=>[...l.slice(-100),{time:ts(),text,type}]);
@@ -420,11 +301,11 @@ function Dialer({config}){
       try{
         let list=[];
         if(config.listId){
-          const d=await hs(`/contacts/v1/lists/${config.listId}/contacts/all?count=100&property=firstname&property=lastname&property=company&property=phone&property=email&property=jobtitle&property=hs_linkedin_url`);
-          list=(d.contacts||[]).map(c=>({id:String(c.vid),name:`${c.properties?.firstname?.value||""} ${c.properties?.lastname?.value||""}`.trim()||"Unknown",company:c.properties?.company?.value||"",phone:c.properties?.phone?.value||"",email:c.properties?.email?.value||"",title:c.properties?.jobtitle?.value||"",linkedin:c.properties?.hs_linkedin_url?.value||""}));
+          const d=await hs(`/contacts/v1/lists/${config.listId}/contacts/all?count=100&property=firstname&property=lastname&property=company&property=phone&property=email&property=jobtitle`);
+          list=(d.contacts||[]).map(c=>({id:String(c.vid),hs_id:String(c.vid),name:`${c.properties?.firstname?.value||""} ${c.properties?.lastname?.value||""}`.trim()||"Unknown",company:c.properties?.company?.value||"",phone:c.properties?.phone?.value||"",email:c.properties?.email?.value||"",title:c.properties?.jobtitle?.value||""}));
         }else{
-          const d=await hs(`/crm/v3/objects/contacts?limit=100&properties=firstname,lastname,company,phone,email,jobtitle,hs_linkedin_url`);
-          list=(d.results||[]).map(c=>({id:c.id,name:`${c.properties?.firstname||""} ${c.properties?.lastname||""}`.trim()||"Unknown",company:c.properties?.company||"",phone:c.properties?.phone||"",email:c.properties?.email||"",title:c.properties?.jobtitle||"",linkedin:c.properties?.hs_linkedin_url||""}));
+          const d=await hs(`/crm/v3/objects/contacts?limit=100&properties=firstname,lastname,company,phone,email,jobtitle`);
+          list=(d.results||[]).map(c=>({id:c.id,hs_id:c.id,name:`${c.properties?.firstname||""} ${c.properties?.lastname||""}`.trim()||"Unknown",company:c.properties?.company||"",phone:c.properties?.phone||"",email:c.properties?.email||"",title:c.properties?.jobtitle||""}));
         }
         setContacts(list);addLog(`✓ Loaded ${list.length} contacts from HubSpot`,"s");
       }catch(e){addLog(`✗ Failed: ${e.message}`,"e");}
@@ -433,13 +314,7 @@ function Dialer({config}){
   },[]);
 
   useEffect(()=>{
-    const next=contacts[idx+1];
-    if(next&&!intelCache[next.id]&&config.anthropicKey)
-      fetchIntel(next,config.anthropicKey).then(d=>setIntelCache(c=>({...c,[next.id]:d})));
-  },[idx,contacts]);
-
-  useEffect(()=>{
-    if(callState==="incall"||callState==="ringing"){timerRef.current=setInterval(()=>setCallSec(s=>s+1),1000);}
+    if(callState==="incall"){timerRef.current=setInterval(()=>setCallSec(s=>s+1),1000);}
     else{clearInterval(timerRef.current);if(callState==="idle")setCallSec(0);}
     return()=>clearInterval(timerRef.current);
   },[callState]);
@@ -449,65 +324,105 @@ function Dialer({config}){
 
   const getOwner=async email=>{try{const d=await hs(`/crm/v3/owners?email=${encodeURIComponent(email)}&limit=1`);return d.results?.[0]?.id||null;}catch{return null;}};
 
-  const logCall=async(contact,disposition,duration)=>{
-    try{
-      await hs("/engagements/v1/engagements",{method:"POST",body:JSON.stringify({engagement:{active:true,type:"CALL"},associations:{contactIds:[contact.id]},metadata:{status:disposition==="answered"?"COMPLETED":"NO_ANSWER",durationMilliseconds:duration*1000,body:disposition==="answered"?`Call connected. Duration: ${fmtTime(duration)}. Rep: ${config.repName}`:`No answer. Follow-up sent. Rep: ${config.repName}`}})});
-      addLog("✓ Call logged to HubSpot","s");
-    }catch(e){addLog(`! Call log failed: ${e.message}`,"w");}
+  const lookupHSContact=async contact=>{
+    // If we have a HS id already use it
+    if(contact.hs_id&&!contact.hs_id.startsWith("rand"))return contact.hs_id;
+    // Search by email
+    if(contact.email){
+      try{
+        const d=await hs(`/crm/v3/objects/contacts/search`,{method:"POST",body:JSON.stringify({filterGroups:[{filters:[{propertyName:"email",operator:"EQ",value:contact.email}]}],limit:1})});
+        if(d.results?.[0])return d.results[0].id;
+      }catch{}
+    }
+    // Search by phone
+    if(contact.phone){
+      try{
+        const d=await hs(`/crm/v3/objects/contacts/search`,{method:"POST",body:JSON.stringify({filterGroups:[{filters:[{propertyName:"phone",operator:"EQ",value:contact.phone}]}],limit:1})});
+        if(d.results?.[0])return d.results[0].id;
+      }catch{}
+    }
+    return null;
   };
 
-  const logFollowUp=async(contact,type)=>{
+  const logCall=async(contact,disposition,duration)=>{
     try{
+      const hsId=await lookupHSContact(contact);
+      if(!hsId){addLog("! Contact not found in HubSpot — call not logged","w");return;}
+      await hs("/engagements/v1/engagements",{method:"POST",body:JSON.stringify({
+        engagement:{active:true,type:"CALL"},
+        associations:{contactIds:[hsId]},
+        metadata:{status:disposition==="answered"?"COMPLETED":"NO_ANSWER",durationMilliseconds:duration*1000,
+          body:disposition==="answered"?`Call connected. Duration: ${fmtTime(duration)}. Rep: ${config.repName}`:`No answer. Rep: ${config.repName}`}
+      })});
+      addLog("✓ Call logged to HubSpot","s");
+      return hsId;
+    }catch(e){addLog(`! Call log failed: ${e.message}`,"w");return null;}
+  };
+
+  const logFollowUp=async(contact,type,hsId)=>{
+    try{
+      const id=hsId||await lookupHSContact(contact);
+      if(!id)return;
       const isEmail=type==="email";
       const body=mergeTpl(isEmail?config.noAnswerEmail:config.noAnswerSms,contact);
-      await hs("/engagements/v1/engagements",{method:"POST",body:JSON.stringify({engagement:{active:true,type:isEmail?"EMAIL":"NOTE"},associations:{contactIds:[contact.id]},metadata:isEmail?{subject:`Tried to reach you, ${contact.name.split(" ")[0]}`,body,from:{email:"bdr@corgi.com"},to:[{email:contact.email}]}:{body:`[SMS] → ${contact.phone}: ${body}`}})});
+      await hs("/engagements/v1/engagements",{method:"POST",body:JSON.stringify({
+        engagement:{active:true,type:isEmail?"EMAIL":"NOTE"},
+        associations:{contactIds:[id]},
+        metadata:isEmail?{subject:`Tried to reach you, ${contact.name.split(" ")[0]}`,body,from:{email:"bdr@corgi.com"},to:[{email:contact.email}]}:{body:`[SMS] → ${contact.phone}: ${body}`}
+      })});
       addLog(`✓ ${type} follow-up logged`,"s");
     }catch(e){addLog(`! ${type} failed: ${e.message}`,"w");}
   };
 
-  const createDeal=async(contact,demo)=>{
+  const createDeal=async(contact,demo,hsId)=>{
     try{
       addLog("Creating deal in HubSpot...","b");
-      const ownerId=demo.ae_email?await getOwner(demo.ae_email):null;
-      if(ownerId)addLog("✓ AE found","s");
-      const deal=await hs("/crm/v3/objects/deals",{method:"POST",body:JSON.stringify({properties:{dealname:contact.company||contact.name,pipeline:"default",dealstage:"appointmentscheduled",closedate:eom(),hs_timestamp:Date.now(),description:`Booked by ${config.repName}. ${demo.notes||""}`,dealtype:"newbusiness",...(ownerId?{hubspot_owner_id:ownerId}:{})}})});
+      const id=hsId||await lookupHSContact(contact);
+      const deal=await hs("/crm/v3/objects/deals",{method:"POST",body:JSON.stringify({properties:{
+        dealname:contact.company||contact.name,
+        pipeline:"default",dealstage:"appointmentscheduled",
+        closedate:eom(),hs_timestamp:Date.now(),
+        description:`Booked by ${config.repName}. AE: ${demo.ae_name||"TBD"}. ${demo.notes||""}`,
+        dealtype:"newbusiness",
+      }})});
       addLog(`✓ Deal created: ${contact.company||contact.name}`,"s");
-      await hs(`/crm/v3/associations/deals/contacts/batch/create`,{method:"POST",body:JSON.stringify({inputs:[{from:{id:deal.id},to:{id:contact.id},type:"deal_to_contact"}]})});
-      if(demo.datetime){
-        await hs("/engagements/v1/engagements",{method:"POST",body:JSON.stringify({engagement:{active:true,type:"MEETING"},associations:{contactIds:[contact.id],dealIds:[deal.id]},metadata:{title:"Demo — Corgi Insurance",body:demo.notes||"",startTime:new Date(demo.datetime).getTime(),endTime:new Date(demo.datetime).getTime()+30*60*1000}})});
+      if(id){
+        await hs(`/crm/v3/associations/deals/contacts/batch/create`,{method:"POST",body:JSON.stringify({inputs:[{from:{id:deal.id},to:{id},type:"deal_to_contact"}]})});
+      }
+      if(demo.datetime&&id){
+        await hs("/engagements/v1/engagements",{method:"POST",body:JSON.stringify({
+          engagement:{active:true,type:"MEETING"},
+          associations:{contactIds:[id],dealIds:[deal.id]},
+          metadata:{title:"Demo — Corgi Insurance",body:demo.notes||"",startTime:new Date(demo.datetime).getTime(),endTime:new Date(demo.datetime).getTime()+30*60*1000}
+        })});
         addLog("✓ Meeting logged","s");
       }
     }catch(e){addLog(`✗ Deal failed: ${e.message}`,"e");}
   };
 
-  const fetchCalendlyAE=async()=>{
-    if(!config.calendlyToken)return null;
-    try{
-      const r=await fetch("https://api.calendly.com/scheduled_events?count=5&sort=start_time:desc",{headers:{Authorization:`Bearer ${config.calendlyToken}`,"Content-Type":"application/json"}});
-      const d=await r.json();
-      const event=d.collection?.[0];if(!event)return null;
-      const hostUri=event.event_memberships?.[0]?.user;if(!hostUri)return null;
-      const hr=await fetch(hostUri,{headers:{Authorization:`Bearer ${config.calendlyToken}`}});
-      const hd=await hr.json();
-      return{email:hd.resource?.email,name:hd.resource?.name};
-    }catch{return null;}
+  const openInHubSpot=contact=>{
+    const hsId=contact.hs_id;
+    let url;
+    if(hsId&&!hsId.startsWith("rand")){
+      url=`https://app.hubspot.com/contacts/${config.portalId}/contact/${hsId}`;
+    } else if(contact.phone){
+      url=`https://app.hubspot.com/contacts/${config.portalId}/contacts/list/view/all/?query=${encodeURIComponent(contact.phone)}`;
+    } else {
+      url=`https://app.hubspot.com/contacts/${config.portalId}/contacts/list/view/all/?query=${encodeURIComponent(contact.name)}`;
+    }
+    if(hsTabRef.current&&!hsTabRef.current.closed){
+      hsTabRef.current.location.href=url;
+    } else {
+      hsTabRef.current=window.open(url,"hubspot_dialer");
+    }
+    addLog(`📋 Opened ${contact.name} in HubSpot — click Call`,"b");
   };
 
-  const handleDial=()=>{
+  const startCall=()=>{
     if(!current)return;
-    if(callState==="incall"||callState==="ringing"){setCallState("paused");addLog(`Call ended — ${fmtTime(callSec)}. Select outcome.`,"w");return;}
-    if(!current.phone){addLog(`No phone number for ${current.name}`,"w");return;}
-    window.open(`tel:${current.phone.replace(/\s/g,"")}`, "_self");
-    setCallState("ringing");addLog(`📞 Dialing ${current.name} — ${current.phone}`);
-    setTimeout(()=>setCallState(s=>s==="ringing"?"incall":s),8000);
-  };
-
-  const handleDemoBookedClick=async()=>{
-    setCallState("paused");setShowDemo(true);
-    addLog("Fetching Calendly AE...","b");
-    const ae=await fetchCalendlyAE();
-    if(ae){setDemoForm(f=>({...f,ae_email:ae.email||"",ae_name:ae.name||""}));addLog(`✓ Calendly AE: ${ae.name}`,"s");}
-    else addLog("Calendly AE not found — enter manually","w");
+    openInHubSpot(current);
+    setCallState("incall");
+    addLog(`📞 Calling ${current.name} — ${current.phone||"no phone"}`);
   };
 
   const confirmDemo=async()=>{
@@ -515,9 +430,9 @@ function Dialer({config}){
     const duration=callSec;
     setCallState("idle");setShowDemo(false);
     setStats(s=>({...s,booked:s.booked+1}));setOutcomes(o=>({...o,[current.id]:"book"}));
-    await logCall(current,"answered",duration);
-    await createDeal(current,demoForm);
-    setDemoForm({datetime:"",ae_email:"",ae_name:"",notes:""});
+    const hsId=await logCall(current,"answered",duration);
+    await createDeal(current,demoForm,hsId);
+    setDemoForm({datetime:"",ae_name:"",notes:""});
     addLog(`🎯 Demo booked — ${current.company}`,"s");
     advance();
   };
@@ -526,29 +441,29 @@ function Dialer({config}){
     if(!current)return;
     const duration=callSec;
     setCallState("idle");setShowDemo(false);setOutcomes(o=>({...o,[current.id]:outcome}));
-    if(outcome==="answered"){setStats(s=>({...s,answered:s.answered+1}));addLog(`✓ Answered — ${current.name}`,"s");await logCall(current,"answered",duration);}
-    else if(outcome==="no_answer"){
-      setStats(s=>({...s,noAnswer:s.noAnswer+1}));addLog("No answer — sending follow-ups...","w");
-      await logCall(current,"no_answer",duration);
-      if(emailOn&&current.email)await logFollowUp(current,"email");else if(!emailOn)addLog("Email skipped (off)","w");
-      if(smsOn&&current.phone)await logFollowUp(current,"sms");else if(!smsOn)addLog("SMS skipped (off)","w");
-    }else if(outcome==="skip"){setStats(s=>({...s,skipped:s.skipped+1}));addLog(`Skipped ${current.name}`);}
+    if(outcome==="answered"){
+      setStats(s=>({...s,answered:s.answered+1}));
+      addLog(`✓ Answered — ${current.name}`,"s");
+      await logCall(current,"answered",duration);
+    } else if(outcome==="no_answer"){
+      setStats(s=>({...s,noAnswer:s.noAnswer+1}));
+      addLog("No answer — logging follow-ups...","w");
+      const hsId=await logCall(current,"no_answer",duration);
+      if(emailOn&&current.email)await logFollowUp(current,"email",hsId);
+      else if(!emailOn)addLog("Email skipped (off)","w");
+      if(smsOn&&current.phone)await logFollowUp(current,"sms",hsId);
+      else if(!smsOn)addLog("SMS skipped (off)","w");
+    } else if(outcome==="skip"){
+      setStats(s=>({...s,skipped:s.skipped+1}));
+      addLog(`Skipped ${current.name}`);
+    }
     advance();
-  };
-
-  const autoDial=(contact)=>{
-    if(!contact||!contact.phone)return;
-    window.open(`tel:${contact.phone.replace(/\s/g,"")}`, "_self");
-    setCallState("ringing");
-    addLog(`📞 Dialing ${contact.name} — ${contact.phone}`);
-    setTimeout(()=>setCallState(s=>s==="ringing"?"incall":s),8000);
   };
 
   const advance=(skipCount=0)=>{
     const nextIdx=idx+1+skipCount;
     if(nextIdx>=contacts.length){addLog("🏁 Queue complete!","s");return;}
     const next=contacts[nextIdx];
-    // skip contacts with no phone silently
     if(!next.phone){
       setOutcomes(o=>({...o,[next.id]:"skip"}));
       setStats(s=>({...s,skipped:s.skipped+1}));
@@ -560,7 +475,9 @@ function Dialer({config}){
     setIdx(nextIdx);
     const delay=parseInt(config.autoDialDelay||"0");
     if(delay===0){
-      autoDial(next);
+      openInHubSpot(next);
+      setCallState("incall");
+      addLog(`📞 Calling ${next.name}`);
     } else {
       setCountdown(delay);
       clearInterval(countdownRef.current);
@@ -569,10 +486,9 @@ function Dialer({config}){
           if(c<=1){
             clearInterval(countdownRef.current);
             setCountdown(0);
-            // get fresh contact ref
             setContacts(prev=>{
               const nc=prev[nextIdx];
-              if(nc)autoDial(nc);
+              if(nc){openInHubSpot(nc);setCallState("incall");addLog(`📞 Calling ${nc.name}`);}
               return prev;
             });
             return 0;
@@ -586,11 +502,11 @@ function Dialer({config}){
   const cancelCountdown=()=>{
     clearInterval(countdownRef.current);
     setCountdown(0);
-    addLog("Auto-dial cancelled — dial manually","w");
+    addLog("Auto-dial cancelled","w");
   };
-  const dialLabel=callState==="ringing"?"Ringing...":callState==="incall"?`End Call  ${fmtTime(callSec)}`:"Call";
-  const dialClass=callState==="ringing"?"ringing":callState==="incall"?"incall":"";
+
   const progress=contacts.length?(idx/contacts.length)*100:0;
+  const statusLabel=callState==="incall"?`In Call ${fmtTime(callSec)}`:callState==="paused"?"Paused":loading?"Loading...":"Ready";
 
   return(
     <><style>{S}</style>
@@ -608,8 +524,8 @@ function Dialer({config}){
           <div className="tb-stat"><div className="tb-val b">{stats.skipped}</div><div className="tb-lbl">Skipped</div></div>
         </div>
         <div className="tb-status">
-          <div className={`sdot ${callState==="incall"?"live":callState==="ringing"?"ringing":callState==="paused"?"paused":""}`}/>
-          {callState==="incall"?"In Call":callState==="ringing"?"Ringing":callState==="paused"?"Paused":loading?"Loading...":"Ready"}
+          <div className={`sdot ${callState==="incall"?"live":callState==="paused"?"paused":""}`}/>
+          {statusLabel}
         </div>
       </div>
 
@@ -651,20 +567,23 @@ function Dialer({config}){
                     {current.linkedin&&<div className="mpill">🔗 <a href={current.linkedin} target="_blank" rel="noreferrer">LinkedIn</a></div>}
                     <div className="mpill">{idx+1} of {contacts.length}</div>
                   </div>
+                  <div className="hs-btn-wrap">
+                    <button className={`hs-open-btn ${callState==="incall"?"calling":""}`} onClick={()=>openInHubSpot(current)}>
+                      {callState==="incall"?"🟢 Open in HubSpot":"🔗 Open in HubSpot to Call"}
+                    </button>
+                  </div>
                 </div>
                 <div className="timer-block">
                   <div className={`timer-val ${callState==="idle"?"idle":""}`}>{fmtTime(callSec)}</div>
-                  <div className="timer-sub">{callState==="idle"?"ready":callState}</div>
+                  <div className="timer-sub">{callState==="idle"?"ready":"in call"}</div>
                 </div>
               </div>
             </div>
           )}
 
-          {callState==="paused"&&!showDemo&&<div className="paused-hint">⏸ Paused — select an outcome or book the demo below</div>}
-
           {countdown>0&&(
             <div className="countdown-bar">
-              <span className="cd-text">Dialing next in</span>
+              <span className="cd-text">Opening next contact in HubSpot in</span>
               <span className="cd-num">{countdown}</span>
               <div className="cd-track"><div className="cd-fill" style={{width:`${(countdown/parseInt(config.autoDialDelay||"3"))*100}%`}}/></div>
               <button className="btn cancel-cd" onClick={cancelCountdown}>Cancel</button>
@@ -676,9 +595,9 @@ function Dialer({config}){
               <div className="demo-title">📅 Book Demo — {current?.company}</div>
               <div className="demo-grid">
                 <div className="field"><label>Demo Date & Time</label><input type="datetime-local" value={demoForm.datetime} onChange={e=>setDemoForm(f=>({...f,datetime:e.target.value}))}/></div>
-                <div className="field"><label>AE Email (Calendly)</label><input placeholder="ae@corgi.com" value={demoForm.ae_email} onChange={e=>setDemoForm(f=>({...f,ae_email:e.target.value}))}/></div>
                 <div className="field"><label>AE Name</label><input placeholder="Anton Burton" value={demoForm.ae_name} onChange={e=>setDemoForm(f=>({...f,ae_name:e.target.value}))}/></div>
                 <div className="field"><label>Source</label><input value="Outbound Cold Approach" readOnly style={{opacity:.6}}/></div>
+                <div className="field"><label>Close Date</label><input value={eom()} readOnly style={{opacity:.6}}/></div>
                 <div className="field full"><label>Call Notes</label><textarea placeholder="Key pain points, what resonated, next steps..." value={demoForm.notes} onChange={e=>setDemoForm(f=>({...f,notes:e.target.value}))}/></div>
               </div>
               <div style={{display:"flex",gap:8,marginTop:14}}>
@@ -699,33 +618,30 @@ function Dialer({config}){
 
         <div className="action-bar">
           <div className="action-row">
-            <button className={`btn dial ${dialClass}`} onClick={handleDial} disabled={!current||callState==="paused"}>📞 {dialLabel}</button>
-            {(callState==="incall"||callState==="ringing")&&<button className="btn pause-btn" onClick={()=>{setCallState("paused");addLog(`⏸ Paused — ${fmtTime(callSec)}`,"w");}}>⏸ Pause</button>}
-            <button className="btn orange" onClick={handleDemoBookedClick} disabled={!current}>📅 Demo Booked</button>
+            <button className="btn orange" style={{fontSize:14,padding:"9px 22px"}} onClick={startCall} disabled={!current||callState==="incall"}>
+              {callState==="incall"?"📞 Calling...":"📞 Start Call"}
+            </button>
+            <button className="btn orange" onClick={()=>{setCallState("paused");setShowDemo(true);}} disabled={!current}>📅 Demo Booked</button>
             <div className="divider"/>
             <button className="btn success" onClick={()=>applyOutcome("answered")} disabled={!current}>✓ Answered</button>
             <button className="btn danger" onClick={()=>applyOutcome("no_answer")} disabled={!current}>✗ No Answer</button>
             <button className="btn" onClick={()=>applyOutcome("skip")} disabled={!current}>Skip →</button>
             <div style={{marginLeft:"auto",display:"flex",gap:6}}>
-              <button className="btn" onClick={()=>{setCallState("idle");setIdx(i=>Math.max(0,i-1));}} disabled={idx===0}>← Prev</button>
-              <button className="btn" onClick={()=>{setCallState("idle");setIdx(i=>Math.min(contacts.length-1,i+1));}} disabled={idx>=contacts.length-1}>Next →</button>
+              <button className="btn" onClick={()=>{setCallState("idle");setIdx(i=>Math.max(0,i-1));clearInterval(countdownRef.current);setCountdown(0);}} disabled={idx===0}>← Prev</button>
+              <button className="btn" onClick={()=>{setCallState("idle");setIdx(i=>Math.min(contacts.length-1,i+1));clearInterval(countdownRef.current);setCountdown(0);}} disabled={idx>=contacts.length-1}>Next →</button>
             </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:20,paddingTop:8,borderTop:"1px solid var(--border)"}}>
             <span style={{fontSize:12,fontWeight:700,color:"var(--text2)"}}>No-Answer Follow-ups:</span>
             <div className="toggle-row" onClick={()=>setEmailOn(v=>!v)}>
-              <div className={`toggle ${emailOn?"on":""}`}/>
-              <span className={`tlabel ${emailOn?"on":""}`}>✉ Email {emailOn?"On":"Off"}</span>
+              <div className={`toggle ${emailOn?"on":""}`}/><span className={`tlabel ${emailOn?"on":""}`}>✉ Email {emailOn?"On":"Off"}</span>
             </div>
             <div className="toggle-row" onClick={()=>setSmsOn(v=>!v)}>
-              <div className={`toggle ${smsOn?"on":""}`}/>
-              <span className={`tlabel ${smsOn?"on":""}`}>💬 SMS {smsOn?"On":"Off"}</span>
+              <div className={`toggle ${smsOn?"on":""}`}/><span className={`tlabel ${smsOn?"on":""}`}>💬 SMS {smsOn?"On":"Off"}</span>
             </div>
           </div>
         </div>
       </div>
-
-      <IntelPanel contact={current} anthropicKey={config.anthropicKey} intelCache={intelCache} setIntelCache={setIntelCache}/>
     </div></>
   );
 }
