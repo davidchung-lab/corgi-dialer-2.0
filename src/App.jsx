@@ -313,13 +313,32 @@ function Dialer({config}){
     })();
   },[]);
 
+  // Pre-resolve HubSpot IDs for all CSV contacts after load
+  useEffect(()=>{
+    if(!contacts.length||config.sourceTab!=="csv")return;
+    const resolve=async()=>{
+      addLog("Resolving contacts in HubSpot...","b");
+      let found=0;
+      const updated=[...contacts];
+      for(let i=0;i<updated.length;i++){
+        const c=updated[i];
+        if(c.hs_id&&!c.hs_id.match(/^[a-z0-9]{6,}$/))continue;
+        const id=await lookupHSContact(c);
+        if(id){updated[i]={...c,hs_id:id};found++;}
+        // small delay to avoid rate limiting
+        if(i%10===9)await new Promise(r=>setTimeout(r,500));
+      }
+      setContacts(updated);
+      addLog(`✓ Resolved ${found}/${updated.length} contacts to HubSpot IDs`,"s");
+    };
+    resolve();
+  },[contacts.length]);
+
   useEffect(()=>{
     if(callState==="incall"){timerRef.current=setInterval(()=>setCallSec(s=>s+1),1000);}
     else{clearInterval(timerRef.current);if(callState==="idle")setCallSec(0);}
     return()=>clearInterval(timerRef.current);
   },[callState]);
-
-  const current=contacts[idx];
   const filtered=search?contacts.filter(c=>`${c.name} ${c.company}`.toLowerCase().includes(search.toLowerCase())):contacts;
 
   const getOwner=async email=>{try{const d=await hs(`/crm/v3/owners?email=${encodeURIComponent(email)}&limit=1`);return d.results?.[0]?.id||null;}catch{return null;}};
@@ -401,27 +420,23 @@ function Dialer({config}){
   };
 
   const openInHubSpot=async contact=>{
-    let hsId=contact.hs_id&&!contact.hs_id.match(/^[a-z0-9]{8,}$/)&&!contact.hs_id.startsWith("rand")?contact.hs_id:null;
-    // If no valid HS id, look it up now
+    let hsId=contact.hs_id&&!contact.hs_id.match(/^[a-z0-9]{6,}$/)?contact.hs_id:null;
     if(!hsId){
       addLog(`Looking up ${contact.name} in HubSpot...`,"b");
       hsId=await lookupHSContact(contact);
-      if(hsId){
-        // Cache it back
-        setContacts(prev=>prev.map(c=>c.id===contact.id?{...c,hs_id:hsId}:c));
-      }
+      if(hsId)setContacts(prev=>prev.map(c=>c.id===contact.id?{...c,hs_id:hsId}:c));
     }
+    const base=`https://app-na2.hubspot.com/contacts/${config.portalId}`;
+    const phone=contact.phone?contact.phone.replace(/\s/g,""):"";
     let url;
-    const phone=contact.phone?encodeURIComponent(contact.phone.replace(/\s/g,"")):"";
     if(hsId){
-      // Opens contact page with phone pre-filled in HubSpot dialer
-      url=`https://app.hubspot.com/contacts/${config.portalId}/contact/${hsId}${phone?`?hs_call_phone_number=${phone}`:""}`;
-    } else if(contact.phone){
-      url=`https://app.hubspot.com/contacts/${config.portalId}/contacts/list/view/all/?query=${encodeURIComponent(contact.phone)}`;
-      addLog(`! No HubSpot ID found — searching by phone`,"w");
+      url=`${base}/record/0-1/${hsId}${phone?`?hs_call_phone_number=${encodeURIComponent(phone)}`:""}`;
+    } else if(phone){
+      url=`${base}/objects/0-1/views/all/list?query=${encodeURIComponent(phone)}`;
+      addLog(`! No HubSpot ID — searching by phone`,"w");
     } else {
-      url=`https://app.hubspot.com/contacts/${config.portalId}/contacts/list/view/all/?query=${encodeURIComponent(contact.name)}`;
-      addLog(`! No HubSpot ID found — searching by name`,"w");
+      url=`${base}/objects/0-1/views/all/list?query=${encodeURIComponent(contact.name)}`;
+      addLog(`! No HubSpot ID — searching by name`,"w");
     }
     if(hsTabRef.current&&!hsTabRef.current.closed){
       hsTabRef.current.location.href=url;
