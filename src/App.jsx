@@ -339,6 +339,7 @@ function Dialer({config}){
     else{clearInterval(timerRef.current);if(callState==="idle")setCallSec(0);}
     return()=>clearInterval(timerRef.current);
   },[callState]);
+  const current=contacts[idx];
   const filtered=search?contacts.filter(c=>`${c.name} ${c.company}`.toLowerCase().includes(search.toLowerCase())):contacts;
 
   const getOwner=async email=>{try{const d=await hs(`/crm/v3/owners?email=${encodeURIComponent(email)}&limit=1`);return d.results?.[0]?.id||null;}catch{return null;}};
