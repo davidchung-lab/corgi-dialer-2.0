@@ -182,7 +182,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .empty-icon{font-size:42px;}
 .empty p{font-size:14px;font-weight:600;}
 .divider{width:1px;background:var(--border);height:30px;margin:0 2px;flex-shrink:0;}
+.countdown-bar{background:var(--active-bg);border:1px solid var(--accent);border-radius:8px;padding:10px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;}
+.cd-text{font-size:13px;font-weight:600;color:var(--accent);flex:1;}
+.cd-num{font-size:22px;font-weight:700;color:var(--accent);min-width:28px;text-align:center;}
+.cd-track{flex:2;height:4px;background:var(--border);border-radius:4px;overflow:hidden;}
+.cd-fill{height:100%;background:var(--accent);border-radius:4px;transition:width 1s linear;}
+.btn.cancel-cd{font-size:12px;padding:5px 12px;border-color:var(--border2);color:var(--text2);}
+.btn.cancel-cd:hover{background:var(--bg);}
 `;
+
 
 const initials = n=>(n||"").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?";
 const fmtTime = s=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
@@ -247,6 +255,7 @@ function Setup({onSubmit}){
   const [tab,setTab]=useState("csv");
   const [form,setForm]=useState({
     hsToken:"",anthropicKey:"",listId:"",calendlyToken:"",repName:"",alejandroEmail:"",
+    autoDialDelay:"3",
     noAnswerEmail:`Hi {{first_name}},\n\nI just tried reaching you — wanted to connect about how Corgi Insurance helps startups like {{company}} get their coverage sorted fast.\n\nWould love 15 minutes this week: [CALENDAR LINK]\n\nBest,\n[YOUR NAME]`,
     noAnswerSms:"Hey {{first_name}}, tried calling — [YOUR NAME] from Corgi Insurance. Mind if I send a quick overview? 📋",
   });
@@ -313,6 +322,19 @@ function Setup({onSubmit}){
         <div className="help">Calendly → top-right avatar → Integrations → API & Webhooks → Personal Access Token</div>
       </div>
 
+      <div className="setup-sec">Auto-Dial</div>
+      <div className="sfield"><label>Delay Between Calls</label>
+        <select value={form.autoDialDelay} onChange={e=>set("autoDialDelay",e.target.value)}>
+          <option value="0">No delay — instant auto-dial</option>
+          <option value="1">1 second</option>
+          <option value="2">2 seconds</option>
+          <option value="3">3 seconds</option>
+          <option value="4">4 seconds</option>
+          <option value="5">5 seconds</option>
+        </select>
+        <div className="help">After logging an outcome, how long to show the next prospect's intel before auto-dialing</div>
+      </div>
+
       <div className="setup-sec">No-Answer Follow-up Templates</div>
       <div className="sfield"><label>Email Template</label>
         <textarea rows={5} value={form.noAnswerEmail} onChange={e=>set("noAnswerEmail",e.target.value)}/>
@@ -377,6 +399,8 @@ function Dialer({config}){
   const [intelCache,setIntelCache]=useState({});
   const [emailOn,setEmailOn]=useState(true);
   const [smsOn,setSmsOn]=useState(true);
+  const [countdown,setCountdown]=useState(0);
+  const countdownRef=useRef(null);
   const timerRef=useRef(null);
   const logRef=useRef(null);
 
@@ -495,7 +519,7 @@ function Dialer({config}){
     await createDeal(current,demoForm);
     setDemoForm({datetime:"",ae_email:"",ae_name:"",notes:""});
     addLog(`🎯 Demo booked — ${current.company}`,"s");
-    setTimeout(()=>advance(),500);
+    advance();
   };
 
   const applyOutcome=async outcome=>{
@@ -509,10 +533,61 @@ function Dialer({config}){
       if(emailOn&&current.email)await logFollowUp(current,"email");else if(!emailOn)addLog("Email skipped (off)","w");
       if(smsOn&&current.phone)await logFollowUp(current,"sms");else if(!smsOn)addLog("SMS skipped (off)","w");
     }else if(outcome==="skip"){setStats(s=>({...s,skipped:s.skipped+1}));addLog(`Skipped ${current.name}`);}
-    setTimeout(()=>advance(),400);
+    advance();
   };
 
-  const advance=()=>{if(idx<contacts.length-1)setIdx(i=>i+1);else addLog("🏁 Queue complete!","s");};
+  const autoDial=(contact)=>{
+    if(!contact||!contact.phone)return;
+    window.open(`tel:${contact.phone.replace(/\s/g,"")}`, "_self");
+    setCallState("ringing");
+    addLog(`📞 Dialing ${contact.name} — ${contact.phone}`);
+    setTimeout(()=>setCallState(s=>s==="ringing"?"incall":s),8000);
+  };
+
+  const advance=(skipCount=0)=>{
+    const nextIdx=idx+1+skipCount;
+    if(nextIdx>=contacts.length){addLog("🏁 Queue complete!","s");return;}
+    const next=contacts[nextIdx];
+    // skip contacts with no phone silently
+    if(!next.phone){
+      setOutcomes(o=>({...o,[next.id]:"skip"}));
+      setStats(s=>({...s,skipped:s.skipped+1}));
+      addLog(`No phone — skipped ${next.name}`);
+      setIdx(nextIdx);
+      advance(skipCount+1);
+      return;
+    }
+    setIdx(nextIdx);
+    const delay=parseInt(config.autoDialDelay||"0");
+    if(delay===0){
+      autoDial(next);
+    } else {
+      setCountdown(delay);
+      clearInterval(countdownRef.current);
+      countdownRef.current=setInterval(()=>{
+        setCountdown(c=>{
+          if(c<=1){
+            clearInterval(countdownRef.current);
+            setCountdown(0);
+            // get fresh contact ref
+            setContacts(prev=>{
+              const nc=prev[nextIdx];
+              if(nc)autoDial(nc);
+              return prev;
+            });
+            return 0;
+          }
+          return c-1;
+        });
+      },1000);
+    }
+  };
+
+  const cancelCountdown=()=>{
+    clearInterval(countdownRef.current);
+    setCountdown(0);
+    addLog("Auto-dial cancelled — dial manually","w");
+  };
   const dialLabel=callState==="ringing"?"Ringing...":callState==="incall"?`End Call  ${fmtTime(callSec)}`:"Call";
   const dialClass=callState==="ringing"?"ringing":callState==="incall"?"incall":"";
   const progress=contacts.length?(idx/contacts.length)*100:0;
@@ -586,6 +661,15 @@ function Dialer({config}){
           )}
 
           {callState==="paused"&&!showDemo&&<div className="paused-hint">⏸ Paused — select an outcome or book the demo below</div>}
+
+          {countdown>0&&(
+            <div className="countdown-bar">
+              <span className="cd-text">Dialing next in</span>
+              <span className="cd-num">{countdown}</span>
+              <div className="cd-track"><div className="cd-fill" style={{width:`${(countdown/parseInt(config.autoDialDelay||"3"))*100}%`}}/></div>
+              <button className="btn cancel-cd" onClick={cancelCountdown}>Cancel</button>
+            </div>
+          )}
 
           {showDemo&&(
             <div className="demo-panel">
